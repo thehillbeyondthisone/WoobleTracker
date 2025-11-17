@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a0f14"/>
+  <title>Woobles Tracker — Sakura</title>
+  <style>
+    /* -------------------- SAKURA THEME (single, opinionated) -------------------- */
+    :root{
+      /* Base palette */
+      --bg:#1a0f14;           /* deep plum-brown */
+      --panel:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.12);
+      --text:#fdf2f6;         /* near-white pink */
+      --muted:#f5cfe0;        /* sakura muted */
+      --brand:#ff6aa7;        /* cherry blossom pink */
+      --brand-2:#ffd6e8;      /* petal light */
+      --accent:var(--brand);
+
+      /* Sizing rhythm tuned for iPhone 15 Plus */
+      --fs:18px; --fs-sm:15px; --fs-title:22px; --lh:1.25;
+      --btn-h:44px; /* slider-controlled */
+      --sp-1:6px; --sp-2:10px; --sp-3:14px; --sp-4:16px; --sp-5:20px;
+      --radius:16px; --radius-lg:18px; --shadow:0 10px 28px rgba(0,0,0,.28);
+      --card-w:430px; /* max content width (slider-controlled) */
+    }
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#fff6fa; --panel:rgba(0,0,0,.04); --stroke:rgba(0,0,0,.08); --text:#23151d; --muted:#7a5a68; --shadow:0 10px 28px rgba(0,0,0,.08); }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%; width:100%; overflow-x:hidden}
+    body{
+      margin:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      font-size:var(--fs); line-height:var(--lh); color:var(--text);
+      background:radial-gradient(1000px 1000px at 120% -10%, color-mix(in oklab, var(--accent) 16%, transparent), transparent 45%),
+                 radial-gradient(900px 900px at -20% 110%, color-mix(in oklab, var(--brand-2) 14%, transparent), transparent 45%), var(--bg);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* -------------------- LAYOUT -------------------- */
+    .app{min-height:100%; padding: env(safe-area-inset-top) var(--sp-4) calc(84px + env(safe-area-inset-bottom)) var(--sp-4); max-width: var(--card-w); margin:0 auto;}
+    header{position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(14px); background:linear-gradient(to bottom, rgba(0,0,0,.18), transparent); padding:calc(env(safe-area-inset-top)+var(--sp-2)) 0 var(--sp-2)}
+
+    .titlebar{display:flex; align-items:center; gap:var(--sp-2)}
+    .logo{width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg,var(--brand),var(--brand-2)); box-shadow:var(--shadow); font-weight:800; color:#1a0f14; font-size:18px}
+    h1{font-size:var(--fs-title); margin:0; letter-spacing:.2px}
+    .sub{color:var(--muted); font-size:13px}
+
+    .toolbar{display:flex; gap:var(--sp-2); margin-top:var(--sp-2); overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px}
+    .chip{flex:1 1 auto; min-width:0; padding:10px 12px; border-radius:14px; border:1px solid var(--stroke); background:var(--panel); color:var(--text); display:flex; align-items:center; gap:8px}
+    .chip > *{min-width:0}
+    .chip svg{flex:0 0 auto}
+    .chip input{flex:1 1 0; min-width:0; border:none; outline:none; background:transparent; color:inherit; font:inherit; font-size:16px}
+    .chip select{border:none; outline:none; background:transparent; color:inherit; font:inherit; font-size:16px; -webkit-appearance:none; appearance:none; padding-right:22px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 6px center}
+
+    .grid{display:grid; gap:var(--sp-2); grid-template-columns:1fr; margin-top:var(--sp-3)}
+
+    .card{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius-lg); padding:var(--sp-4); box-shadow:var(--shadow); position:relative; overflow:hidden; text-align:left }
+    .card:after{ content:""; position:absolute; inset:0; pointer-events:none; background: radial-gradient(160px 90px at 95% -20%, rgba(255,255,255,.07), transparent 60%); }
+    .card.touch{ cursor:pointer }
+
+    .row{ display:flex; gap:var(--sp-2); align-items:center; flex-wrap:nowrap }
+    .grow{ flex:1 1 auto; min-width:0 }
+
+    /* -------------------- BUTTONS -------------------- */
+    .btn{ border:none; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#1a0f14; font-weight:800; padding:12px 14px; border-radius:12px; box-shadow:var(--shadow); cursor:pointer; font-size:17px; line-height:1.1; display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:var(--btn-h); white-space:nowrap; }
+    .btn.ghost{ background:transparent; color:var(--text); border:1px solid var(--stroke); box-shadow:none }
+    .btn.small{ padding:10px 12px; border-radius:10px; font-size:16px; min-height:calc(var(--btn-h) - 4px) }
+    .btn.wide{ width:100% }
+
+    .status{ font-size:13px; padding:6px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(255,255,255,.08); white-space:nowrap; max-width:50%; overflow:hidden; text-overflow:ellipsis }
+    .status[data-s="In progress"]{ background:color-mix(in oklab, var(--brand-2) 18%, transparent)}
+    .status[data-s="Paused"]{ background:rgba(255,209,102,.22)}
+    .status[data-s="Finished"]{ background:rgba(122,208,122,.24)}
+
+    .progress{ height:12px; background:rgba(255,255,255,.12); border-radius:999px; overflow:hidden; border:1px solid var(--stroke) }
+    .progress>i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--brand),var(--brand-2)); }
+
+    .thumbs{ display:flex; gap:8px; overflow:auto; -webkit-overflow-scrolling:touch; padding:2px 0 }
+    .thumb{ position:relative; width:76px; height:76px; border-radius:12px; overflow:hidden; border:1px solid var(--stroke); background:#111; flex:0 0 auto }
+    .thumb img{ width:100%; height:100%; object-fit:cover }
+
+    .empty{ text-align:center; color:var(--muted); padding:24px 10px; border:2px dashed var(--stroke); border-radius:var(--radius-lg); font-size:16px }
+
+    .fab{ position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 20; width:60px; height:60px; display:grid; place-items:center; border-radius:16px; box-shadow: var(--shadow); background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#1a0f14; font-size:28px; font-weight:900; }
+
+    dialog{ width:min(var(--card-w), 96vw); border:none; padding:0; border-radius:20px; background:var(--bg); color:var(--text); box-shadow: var(--shadow); }
+    dialog::backdrop{ backdrop-filter: blur(8px) saturate(140%); background:rgba(0,0,0,.35); }
+    .sheet{ padding:var(--sp-3); border-radius:20px; border:1px solid var(--stroke); background:var(--panel); max-width:100% }
+    .sheet h2{ margin:0 0 var(--sp-1) 0; font-size:calc(var(--fs-title) - 1px) }
+    .f{ display:grid; gap:var(--sp-2); }
+    .f label{ font-size:13px; color:var(--muted) }
+    .f input[type="text"], .f textarea, .f select, .f input[type="number"], .f input[type="range"]{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--stroke); background:rgba(255,255,255,.06); color:var(--text); font:inherit; font-size:16px; min-width:0 }
+    .f input[type="range"]{ padding:0; height:38px; background:transparent }
+    .f textarea{ min-height:110px; resize:vertical }
+    .hr{ height:1px; background:var(--stroke); margin:var(--sp-2) 0 }
+
+    .footerBar{ position: fixed; left:0; right:0; bottom:0; padding: env(safe-area-inset-bottom); z-index:9; backdrop-filter: blur(14px) saturate(140%); background: linear-gradient(to top, rgba(0,0,0,.18), transparent); }
+    .footerBar .bar{ max-width: var(--card-w); margin:0 auto; padding:var(--sp-2) var(--sp-4); display:flex; gap:var(--sp-2); align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch }
+    .badge{ font-size:12px; padding:6px 8px; border-radius:999px; border:1px solid var(--stroke); background:var(--panel); color:var(--muted) }
+
+    .pillTabs{ display:flex; gap:8px }
+    .pillTabs button{ padding:10px 12px; border-radius:999px; border:1px solid var(--stroke); background:var(--panel); color:var(--text); cursor:pointer; font-size:16px; white-space:nowrap; min-height:40px }
+    .pillTabs button[aria-pressed="true"]{ background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#1a0f14; font-weight:800 }
+
+    /* Utilities */
+    .truncate{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .muted{ color:var(--muted) }
+    .hidden{ display:none !important }
+
+    /* Toast */
+    .toast{ position:fixed; left:50%; bottom:calc(78px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:rgba(20,20,20,.85); color:#fff; padding:8px 10px; border-radius:12px; font-size:14px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px) }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="titlebar">
+      <div class="logo">🌸</div>
+      <div class="grow">
+        <h1 class="truncate">Woobles Tracker</h1>
+        <div class="sub truncate">Simple • solid • Sakura</div>
+      </div>
+      <button class="btn small ghost" id="btnSettings" aria-label="Settings">Settings</button>
+    </div>
+    <div class="toolbar">
+      <div class="chip"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/></svg>
+        <input id="search" placeholder="Search projects…"/>
+      </div>
+      <div class="chip" style="flex:0 0 auto"><select id="filterStatus"><option value="">All</option><option>Not started</option><option selected>In progress</option><option>Paused</option><option>Finished</option></select></div>
+      <div class="chip" style="flex:0 0 auto"><select id="sortBy"><option value="updated">Recently updated</option><option value="progress">Progress</option><option value="name">Name</option><option value="created">Newest first</option></select></div>
+      <span class="badge" id="countBadge">0 items</span>
+    </div>
+  </header>
+
+  <div id="cards" class="grid"></div>
+
+  <button class="fab" id="addFab" aria-label="Add project">＋</button>
+</div>
+
+<div class="footerBar"><div class="bar">
+  <div class="pillTabs">
+    <button id="tabAll" aria-pressed="false">All</button>
+    <button id="tabActive" aria-pressed="true">Active</button>
+    <button id="tabFinished" aria-pressed="false">Finished</button>
+  </div>
+</div></div>
+
+<!-- Create/Edit Sheet -->
+<dialog id="editDlg">
+  <form method="dialog" class="sheet f" id="editForm">
+    <h2 id="dlgTitle">Edit Project</h2>
+    <label>Name<input required id="name" type="text" placeholder="e.g. Pierre the Penguin"></label>
+    <div class="row">
+      <label id="patternWrap" class="grow">Pattern<input id="pattern" type="text" placeholder="Kit/pattern link or notes"></label>
+      <label>Status
+        <select id="status">
+          <option>Not started</option>
+          <option>In progress</option>
+          <option>Paused</option>
+          <option>Finished</option>
+        </select>
+      </label>
+    </div>
+    <label>Progress
+      <input id="progress" type="range" min="0" max="100" value="0" oninput="progressVal.textContent=this.value+'%';">
+      <div class="row" style="justify-content:space-between"><span class="muted">0%</span><strong id="progressVal">0%</strong><span class="muted">100%</span></div>
+    </label>
+    <label>Notes<textarea id="notes" placeholder="Yarn, hook, tricky steps, etc."></textarea></label>
+
+    <div class="hr"></div>
+    <div class="row">
+      <div>
+        <div class="sub" style="margin-bottom:6px">Add photo</div>
+        <input id="photoInput" type="file" accept="image/*" capture="environment">
+      </div>
+      <div class="grow"></div>
+      <button class="btn small ghost" id="clearPhotos" type="button">Clear photos</button>
+    </div>
+    <div class="thumbs" id="photoStrip"></div>
+
+    <div class="hr"></div>
+    <div class="row" style="align-items:flex-start">
+      <div class="sub">Checklist (optional)</div>
+      <div class="grow"></div>
+      <label class="chip" style="gap:6px"><input type="checkbox" id="autoProgress"> Auto progress</label>
+    </div>
+    <div id="checklist" class="checklist"></div>
+    <div class="row">
+      <input id="chkText" class="grow" type="text" placeholder="Add step (e.g. Body)" />
+      <button id="chkAdd" class="btn small ghost" type="button">Add</button>
+    </div>
+
+    <div class="row" style="justify-content:flex-end; gap:10px; margin-top:6px">
+      <button class="btn small ghost" value="cancel">Cancel</button>
+      <button class="btn small" id="saveBtn" value="default">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Settings Sheet (simple + Advanced) -->
+<dialog id="settingsDlg">
+  <form method="dialog" class="sheet f" id="settingsForm">
+    <h2>Settings</h2>
+    <label>Text size <small class="muted">(14–22px)</small>
+      <input id="uiText" type="range" min="14" max="22" step="1">
+    </label>
+    <label>Button height <small class="muted">(36–56px)</small>
+      <input id="uiBtnH" type="range" min="36" max="56" step="2">
+    </label>
+    <label>Corner radius <small class="muted">(10–22px)</small>
+      <input id="uiRadius" type="range" min="10" max="22" step="1">
+    </label>
+    <label>Content width <small class="muted">(380–460px)</small>
+      <input id="uiCardW" type="range" min="380" max="460" step="2">
+    </label>
+
+    <details>
+      <summary class="btn small ghost" style="list-style:none; width:fit-content">Advanced options</summary>
+      <div class="hr"></div>
+      <h3 style="margin:0; font-size:16px">Server Save</h3>
+      <label>Endpoint URL<input id="serverUrl" type="text" placeholder="https://yourdomain.com/api/woobles/save"></label>
+      <label>Bearer token (optional)<input id="serverToken" type="text" placeholder="abc123..."></label>
+    </details>
+
+    <div class="row" style="justify-content:flex-end; gap:8px">
+      <button class="btn small ghost" value="cancel">Close</button>
+      <button class="btn small" id="btnSaveSettings" value="default">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+  const storeKey='woobles.sakura.v2'; let items=load(); let currentId=null; const cards=$('#cards');
+  let dirty=false; let autosaveTimer=null; let lastServerSave=0;
+
+  // ===== Settings (server only) =====
+  const settings={ get url(){ return localStorage.getItem('woobles.server.url')||''; }, set url(v){ localStorage.setItem('woobles.server.url', v||''); }, get token(){ return localStorage.getItem('woobles.server.token')||''; }, set token(v){ localStorage.setItem('woobles.server.token', v||''); }, };
+  const settingsDlg=$('#settingsDlg');
+
+  // UI sliders init from current CSS / storage
+  const uiText=$('#uiText'), uiBtnH=$('#uiBtnH'), uiRadius=$('#uiRadius'), uiCardW=$('#uiCardW');
+  function cssv(name, fallback){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||fallback; }
+  function applyUI(){
+    document.documentElement.style.setProperty('--fs', uiText.value+'px');
+    document.documentElement.style.setProperty('--fs-title', (parseInt(uiText.value,10)+4)+'px');
+    document.documentElement.style.setProperty('--btn-h', uiBtnH.value+'px');
+    const r=parseInt(uiRadius.value,10); document.documentElement.style.setProperty('--radius', r+'px'); document.documentElement.style.setProperty('--radius-lg', (r+2)+'px');
+    document.documentElement.style.setProperty('--card-w', uiCardW.value+'px');
+  }
+  function loadUI(){
+    uiText.value = +(localStorage.getItem('woobles.ui.fs')|| parseInt(cssv('--fs','18px')));
+    uiBtnH.value = +(localStorage.getItem('woobles.ui.btnh')|| parseInt(cssv('--btn-h','44px')));
+    uiRadius.value = +(localStorage.getItem('woobles.ui.radius')|| parseInt(cssv('--radius','16px')));
+    uiCardW.value = +(localStorage.getItem('woobles.ui.cardw')|| parseInt(cssv('--card-w','430px')));
+    applyUI();
+  }
+  loadUI();
+  uiText.addEventListener('input',()=>{ localStorage.setItem('woobles.ui.fs', uiText.value); applyUI(); });
+  uiBtnH.addEventListener('input',()=>{ localStorage.setItem('woobles.ui.btnh', uiBtnH.value); applyUI(); });
+  uiRadius.addEventListener('input',()=>{ localStorage.setItem('woobles.ui.radius', uiRadius.value); applyUI(); });
+  uiCardW.addEventListener('input',()=>{ localStorage.setItem('woobles.ui.cardw', uiCardW.value); applyUI(); });
+
+  $('#btnSettings').addEventListener('click',()=>{ $('#serverUrl').value=settings.url; $('#serverToken').value=settings.token; settingsDlg.showModal(); });
+  $('#btnSaveSettings').addEventListener('click',e=>{ e.preventDefault(); settings.url=$('#serverUrl').value.trim(); settings.token=$('#serverToken').value.trim(); settingsDlg.close(); toast('Settings saved'); saveToServer('settings-changed'); });
+
+  // ===== UI Handlers =====
+  $('#addFab').addEventListener('click',()=>openEditor());
+  $('#search').addEventListener('input',render);
+  $('#filterStatus').addEventListener('change',render);
+  $('#sortBy').addEventListener('change',render);
+  $('#tabAll').addEventListener('click',()=>setTab('all'));
+  $('#tabActive').addEventListener('click',()=>setTab('active'));
+  $('#tabFinished').addEventListener('click',()=>setTab('finished'));
+
+  // ===== Edit dialog & data ops =====
+  const editDlg=$('#editDlg'); const photoInput=$('#photoInput'); const photoStrip=$('#photoStrip'); const clearPhotosBtn=$('#clearPhotos');
+  const chkWrap=$('#checklist'); const chkText=$('#chkText'); const chkAdd=$('#chkAdd'); const autoCb=$('#autoProgress');
+
+  chkAdd.addEventListener('click',()=>{ const t=chkText.value.trim(); if(!t) return; const itm=items.find(x=>x.id===currentId); if(!itm) return; (itm.checklist||(itm.checklist=[])).push({id:uid(), text:t, done:false}); chkText.value=''; save(); renderChecklist(itm); if(autoCb.checked) autoFromChecklist(itm); render(); scheduleAutosave('checklist-add'); });
+
+  function renderChecklist(itm){ chkWrap.innerHTML=''; (itm.checklist||[]).forEach(step=>{ const row=document.createElement('div'); row.className='item'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!step.done; cb.addEventListener('change',()=>{ step.done=cb.checked; save(); if(autoCb.checked) autoFromChecklist(itm); render(); scheduleAutosave('checklist-toggle'); }); const txt=document.createElement('input'); txt.type='text'; txt.value=step.text; txt.addEventListener('change',()=>{ step.text=txt.value.trim(); save(); scheduleAutosave('checklist-edit'); }); const del=document.createElement('button'); del.className='btn small ghost'; del.textContent='×'; del.addEventListener('click',()=>{ itm.checklist=itm.checklist.filter(s=>s.id!==step.id); save(); if(autoCb.checked) autoFromChecklist(itm); renderChecklist(itm); render(); scheduleAutosave('checklist-delete'); }); row.append(cb,txt,del); chkWrap.append(row); }); }
+  function autoFromChecklist(itm){ const list=itm.checklist||[]; if(!list.length) return; const pct=Math.round(list.filter(s=>s.done).length*100/list.length); itm.progress=pct; itm.status=pct===100?'Finished':(pct===0?itm.status:'In progress'); itm.updated=Date.now(); save(); }
+
+  photoInput.addEventListener('change',async e=>{ const file=e.target.files[0]; if(!file) return; const b64=await fileToDataURL(file,1280); const itm=items.find(x=>x.id===currentId); if(itm){ (itm.photos||(itm.photos=[])).push({id:uid(),data:b64,t:Date.now()}); save(); renderPhotoStrip(itm.photos); render(); scheduleAutosave('photo-add'); } e.target.value=''; });
+  clearPhotosBtn.addEventListener('click',()=>{ const itm=items.find(x=>x.id===currentId); if(!itm) return; if(confirm('Remove all photos for this project?')){ itm.photos=[]; save(); renderPhotoStrip([]); render(); scheduleAutosave('photos-clear'); }});
+
+  $('#editForm').addEventListener('submit',async e=>{ e.preventDefault(); const payload=collectForm(); if(currentId){ const ix=items.findIndex(x=>x.id===currentId); items[ix]={...items[ix],...payload,updated:Date.now()}; } else { items.unshift({ id:uid(), created:Date.now(), updated:Date.now(), photos:[], checklist:[], ...payload }); } save(); render(); editDlg.close(); await saveToServer('edit-submit'); });
+
+  function openEditor(id){ currentId=id||null; const isEdit=!!id; $('#dlgTitle').textContent=isEdit?'Edit Project':'New Project'; const itm=isEdit?items.find(x=>x.id===id):{photos:[],checklist:[]}; $('#name').value=itm.name||''; $('#status').value=itm.status||'In progress'; $('#progress').value=itm.progress||0; $('#progressVal').textContent=(itm.progress||0)+'%'; $('#notes').value=itm.notes||''; renderPhotoStrip(itm.photos||[]); renderChecklist(itm); autoCb.checked=false; // hide Pattern on create-new
+    const pw=$('#patternWrap'); if(pw){ pw.classList.toggle('hidden', !isEdit); }
+    // ensure pattern field mirrors existing value only when editing
+    const p=$('#pattern'); if(p){ p.value=isEdit?(itm.pattern||''):''; }
+    editDlg.showModal(); }
+  function collectForm(){ return { name:$('#name').value.trim(), pattern:$('#pattern')?$('#pattern').value.trim():'' , status:$('#status').value, progress:+$('#progress').value, notes:$('#notes').value.trim() }; }
+
+  function render(){ const q=$('#search').value.toLowerCase(); const f=$('#filterStatus').value || 'In progress';
+    const tab=document.querySelector('.pillTabs button[aria-pressed="true"]').id; const sort=$('#sortBy').value; let list=items.slice(); if(q){ list=list.filter(i=> (i.name+" "+(i.pattern||'')+" "+(i.notes||'')).toLowerCase().includes(q)); } if(f){ list=list.filter(i=>i.status===f); } if(tab==='tabActive'){ list=list.filter(i=>i.status==='In progress'||(i.progress>0&&i.progress<100)); } if(tab==='tabFinished'){ list=list.filter(i=>i.status==='Finished'||i.progress===100); }
+    list.sort((a,b)=> sort==='updated'?(b.updated||0)-(a.updated||0) : sort==='created'?(b.created||0)-(a.created||0) : sort==='name'?(a.name||'').localeCompare(b.name||'') : (b.progress||0)-(a.progress||0));
+    cards.innerHTML=''; if(!list.length){ const div=document.createElement('div'); div.className='empty'; div.textContent='Nothing in progress — tap ＋ to start a Wooble!'; cards.appendChild(div);} else { for(const itm of list){ cards.appendChild(card(itm)); } } $('#countBadge').textContent=list.length+' items'; }
+
+  function card(itm){ const el=document.createElement('button'); el.className='card touch'; el.type='button'; el.addEventListener('click',()=>openEditor(itm.id));
+    const titleRow=document.createElement('div'); titleRow.className='row';
+    const title=document.createElement('div'); title.className='grow';
+    title.innerHTML=`<div class="truncate" style="font-weight:800;font-size:var(--fs-title)">${escapeHtml(itm.name||'Untitled')}</div><div class='sub clamp-2' style='font-size:14px;margin-top:2px'>${escapeHtml(itm.pattern||'')}</div>`;
+    const stat=document.createElement('span'); stat.className='status'; stat.dataset.s=itm.status||'In progress'; stat.textContent=itm.status||'In progress';
+    titleRow.append(title,stat);
+
+    const prog=document.createElement('div'); prog.className='progress'; const bar=document.createElement('i'); bar.style.width=(itm.progress||0)+'%'; prog.appendChild(bar);
+
+    const meta=document.createElement('div'); meta.className='row'; meta.style.marginTop='8px'; const upd=new Date(itm.updated||itm.created||Date.now()); const last=document.createElement('div'); last.className='muted truncate'; last.textContent='Updated '+rel(upd);
+    const thumbs=document.createElement('div'); thumbs.className='thumbs'; const latest=(itm.photos||[]).slice(-1)[0]; if(latest){ const t=document.createElement('div'); t.className='thumb'; const img=new Image(); img.src=latest.data; t.appendChild(img); thumbs.appendChild(t); }
+    meta.append(last);
+    el.append(titleRow,prog,meta,thumbs);
+    return el; }
+
+  function setTab(which){ $$('.pillTabs button').forEach(b=>b.setAttribute('aria-pressed', String(b.id===('tab'+which.charAt(0).toUpperCase()+which.slice(1))))); render(); }
+  function renderPhotoStrip(arr){ photoStrip.innerHTML=''; (arr||[]).forEach(ph=>{ const t=document.createElement('div'); t.className='thumb'; const img=new Image(); img.src=ph.data; t.appendChild(img); photoStrip.appendChild(t); }); }
+
+  function fileToDataURL(file,maxSide=1024){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const s=Math.min(1,maxSide/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,c.width,c.height); resolve(c.toDataURL('image/jpeg',0.85)); }; img.onerror=reject; img.src=r.result; }; r.onerror=reject; r.readAsDataURL(file); }); }
+  function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36) }
+  function escapeHtml(s=''){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])) }
+  function rel(d){ const ms=Date.now()-d.getTime(); const m=Math.round(ms/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; const da=Math.round(h/24); return da+'d ago'; }
+
+  // ===== Persistence =====
+  function save(){ localStorage.setItem(storeKey, JSON.stringify(items)); dirty=true; }
+  function load(){ try{ return JSON.parse(localStorage.getItem(storeKey)||'[]'); }catch{ return []; } }
+
+  function scheduleAutosave(reason){ dirty=true; clearTimeout(autosaveTimer); autosaveTimer=setTimeout(()=>saveToServer(reason), 1200); }
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden && dirty) saveToServer('page-hide'); });
+  setInterval(()=>{ if(Date.now()-lastServerSave>60000 && dirty) saveToServer('interval'); }, 60000);
+
+  async function saveToServer(reason='manual'){
+    if(!dirty && reason!=='edit-submit' && reason!=='settings-changed') return;
+    const url=(localStorage.getItem('woobles.server.url')||'').trim() || '/api/woobles/save';
+    const token=(localStorage.getItem('woobles.server.token')||'').trim();
+    try{
+      const payload={ items, reason, ts:Date.now(), client: 'woobles-sakura-v2' };
+      const body=JSON.stringify(payload);
+      const headers={'Content-Type':'application/json'}; if(token) headers['Authorization']='Bearer '+token;
+      if(navigator.sendBeacon){ const blob=new Blob([body],{type:'application/json'}); const ok=navigator.sendBeacon(url, blob); if(ok){ dirty=false; lastServerSave=Date.now(); toast('Saved to server'); return; } }
+      const res=await fetch(url,{method:'POST', headers, body, credentials:'include'});
+      if(!res.ok){ throw new Error('Server responded '+res.status); }
+      dirty=false; lastServerSave=Date.now(); toast('Saved to server');
+    }catch(err){ console.error('Server save failed', err); toast('Server save failed'); }
+  }
+
+  // ===== Seed demo data =====
+  if(!items.length){ items=[
+    {id:uid(), name:'Pierre the Penguin', pattern:'Beginner kit', status:'In progress', progress:45, notes:'Body done, starting flippers. Using 4mm hook.', created:Date.now()-86400000*4, updated:Date.now()-3600000*6, photos:[], checklist:[{id:uid(),text:'Body',done:true},{id:uid(),text:'Flippers',done:false}]},
+    {id:uid(), name:'Bubbles the Whale', pattern:'YouTube pattern', status:'Not started', progress:0, notes:'Need to pick yarn color', created:Date.now()-86400000*2, updated:Date.now()-86400000, photos:[], checklist:[]}
+  ]; save(); }
+
+  render();
+
+  // ===== Toast =====
+  function toast(msg){ const el=$('#toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), 1400); }
+})();
+</script>
+</body>
+</html>
